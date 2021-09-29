@@ -23,7 +23,7 @@ from tests.odm.models import (
     DocumentWithTurnedOffStateManagement,
     DocumentWithValidationOnSave,
     DocumentWithRevisionTurnedOn,
-    DocumentWithPydanticConfig,
+    DocumentWithPydanticConfig, Inner, DocumentWithNestedField,
 )
 from tests.odm.models import (
     Sample,
@@ -138,6 +138,8 @@ async def init(loop, db):
         DocumentWithTurnedOffStateManagement,
         DocumentWithValidationOnSave,
         DocumentWithRevisionTurnedOn,
+        Inner,
+        DocumentWithNestedField,
     ]
     await init_beanie(
         database=db,
@@ -145,9 +147,9 @@ async def init(loop, db):
     )
     yield None
 
-    for model in models:
-        await model.get_motor_collection().drop()
-        await model.get_motor_collection().drop_indexes()
+    # for model in models:
+    #     await model.get_motor_collection().drop()
+    #     await model.get_motor_collection().drop_indexes()
 
 
 @pytest.fixture

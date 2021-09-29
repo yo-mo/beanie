@@ -25,7 +25,7 @@ from beanie.odm.interfaces.update import UpdateMethods
 from beanie.odm.operators.find.logical import And
 from beanie.odm.queries.aggregation import AggregationQuery
 from beanie.odm.queries.cursor import BaseCursorQuery
-from beanie.odm.utils.encoder import bson_encoder
+from beanie.odm.utils.encoder import Encoder
 from beanie.odm.queries.delete import (
     DeleteQuery,
     DeleteMany,
@@ -75,24 +75,24 @@ class FindQuery(Generic[FindQueryResultType], UpdateMethods, SessionMethods):
             Type[FindQueryResultType], self.document_model
         )
         self.session = None
-        self.encoders: Dict[Any, Callable[[Any], Any]] = {}
-        collection_class = getattr(self.document_model, "Collection", None)
-        if collection_class:
-            self.encoders = vars(collection_class).get("bson_encoders", {})
+        # self.encoders: Dict[Any, Callable[[Any], Any]] = {}
+        # collection_class = getattr(self.document_model, "Collection", None)  #TODO
+        # if collection_class:
+        #     self.encoders = vars(collection_class).get("bson_encoders", {})
 
     def get_filter_query(self) -> Mapping[str, Any]:
         if self.find_expressions:
-            return bson_encoder.encode(
-                And(*self.find_expressions).query, custom_encoder=self.encoders
-            )
+            return Encoder(
+                And(*self.find_expressions).query
+            ).main_object_encoded
         else:
             return {}
 
     def update(
-        self,
-        *args: Mapping[str, Any],
-        session: Optional[ClientSession] = None,
-        **kwargs,
+            self,
+            *args: Mapping[str, Any],
+            session: Optional[ClientSession] = None,
+            **kwargs,
     ):
         """
         Create Update with modifications query
@@ -108,15 +108,15 @@ class FindQuery(Generic[FindQueryResultType], UpdateMethods, SessionMethods):
                 document_model=self.document_model,
                 find_query=self.get_filter_query(),
             )
-            .update(*args)
-            .set_session(session=self.session)
+                .update(*args)
+                .set_session(session=self.session)
         )
 
     def upsert(
-        self,
-        *args: Mapping[str, Any],
-        on_insert: "DocType",
-        session: Optional[ClientSession] = None,
+            self,
+            *args: Mapping[str, Any],
+            on_insert: "DocType",
+            session: Optional[ClientSession] = None,
     ):
         """
         Create Update with modifications query
@@ -134,12 +134,12 @@ class FindQuery(Generic[FindQueryResultType], UpdateMethods, SessionMethods):
                 document_model=self.document_model,
                 find_query=self.get_filter_query(),
             )
-            .upsert(*args, on_insert=on_insert)
-            .set_session(session=self.session)
+                .upsert(*args, on_insert=on_insert)
+                .set_session(session=self.session)
         )
 
     def delete(
-        self, session: Optional[ClientSession] = None
+            self, session: Optional[ClientSession] = None
     ) -> Union[DeleteOne, DeleteMany]:
         """
         Provide search criteria to the Delete query
@@ -154,8 +154,8 @@ class FindQuery(Generic[FindQueryResultType], UpdateMethods, SessionMethods):
         ).set_session(session=session)
 
     def project(
-        self,
-        projection_model,
+            self,
+            projection_model,
     ):
         """
         Apply projection parameter
@@ -197,36 +197,36 @@ class FindMany(
 
     @overload
     def find_many(
-        self: "FindMany[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: None = None,
-        skip: Optional[int] = None,
-        limit: Optional[int] = None,
-        sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
-        session: Optional[ClientSession] = None,
+            self: "FindMany[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: None = None,
+            skip: Optional[int] = None,
+            limit: Optional[int] = None,
+            sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
+            session: Optional[ClientSession] = None,
     ) -> "FindMany[FindQueryResultType]":
         ...
 
     @overload
     def find_many(
-        self: "FindMany[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: Type[FindQueryProjectionType] = None,
-        skip: Optional[int] = None,
-        limit: Optional[int] = None,
-        sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
-        session: Optional[ClientSession] = None,
+            self: "FindMany[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: Type[FindQueryProjectionType] = None,
+            skip: Optional[int] = None,
+            limit: Optional[int] = None,
+            sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
+            session: Optional[ClientSession] = None,
     ) -> "FindMany[FindQueryProjectionType]":
         ...
 
     def find_many(
-        self: "FindMany[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: Optional[Type[FindQueryProjectionType]] = None,
-        skip: Optional[int] = None,
-        limit: Optional[int] = None,
-        sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
-        session: Optional[ClientSession] = None,
+            self: "FindMany[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: Optional[Type[FindQueryProjectionType]] = None,
+            skip: Optional[int] = None,
+            limit: Optional[int] = None,
+            sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
+            session: Optional[ClientSession] = None,
     ) -> Union[
         "FindMany[FindQueryResultType]", "FindMany[FindQueryProjectionType]"
     ]:
@@ -256,21 +256,21 @@ class FindMany(
 
     @overload
     def project(
-        self: "FindMany",
-        projection_model: None,
+            self: "FindMany",
+            projection_model: None,
     ) -> "FindMany[FindQueryResultType]":
         ...
 
     @overload
     def project(
-        self: "FindMany",
-        projection_model: Type[FindQueryProjectionType],
+            self: "FindMany",
+            projection_model: Type[FindQueryProjectionType],
     ) -> "FindMany[FindQueryProjectionType]":
         ...
 
     def project(
-        self: "FindMany",
-        projection_model: Optional[Type[FindQueryProjectionType]],
+            self: "FindMany",
+            projection_model: Optional[Type[FindQueryProjectionType]],
     ) -> Union[
         "FindMany[FindQueryResultType]", "FindMany[FindQueryProjectionType]"
     ]:
@@ -285,36 +285,36 @@ class FindMany(
 
     @overload
     def find(
-        self: "FindMany[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: None = None,
-        skip: Optional[int] = None,
-        limit: Optional[int] = None,
-        sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
-        session: Optional[ClientSession] = None,
+            self: "FindMany[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: None = None,
+            skip: Optional[int] = None,
+            limit: Optional[int] = None,
+            sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
+            session: Optional[ClientSession] = None,
     ) -> "FindMany[FindQueryResultType]":
         ...
 
     @overload
     def find(
-        self: "FindMany[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: Type[FindQueryProjectionType] = None,
-        skip: Optional[int] = None,
-        limit: Optional[int] = None,
-        sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
-        session: Optional[ClientSession] = None,
+            self: "FindMany[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: Type[FindQueryProjectionType] = None,
+            skip: Optional[int] = None,
+            limit: Optional[int] = None,
+            sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
+            session: Optional[ClientSession] = None,
     ) -> "FindMany[FindQueryProjectionType]":
         ...
 
     def find(
-        self: "FindMany[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: Optional[Type[FindQueryProjectionType]] = None,
-        skip: Optional[int] = None,
-        limit: Optional[int] = None,
-        sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
-        session: Optional[ClientSession] = None,
+            self: "FindMany[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: Optional[Type[FindQueryProjectionType]] = None,
+            skip: Optional[int] = None,
+            limit: Optional[int] = None,
+            sort: Union[None, str, List[Tuple[str, SortDirection]]] = None,
+            session: Optional[ClientSession] = None,
     ) -> Union[
         "FindMany[FindQueryResultType]", "FindMany[FindQueryProjectionType]"
     ]:
@@ -331,12 +331,13 @@ class FindMany(
         )
 
     def sort(
-        self,
-        *args: Optional[
-            Union[
-                str, Tuple[str, SortDirection], List[Tuple[str, SortDirection]]
-            ]
-        ],
+            self,
+            *args: Optional[
+                Union[
+                    str, Tuple[str, SortDirection], List[
+                        Tuple[str, SortDirection]]
+                ]
+            ],
     ) -> "FindMany[FindQueryResultType]":
         """
         Add sort parameters
@@ -391,7 +392,8 @@ class FindMany(
         return self
 
     def update_many(
-        self, *args: Mapping[str, Any], session: Optional[ClientSession] = None
+            self, *args: Mapping[str, Any],
+            session: Optional[ClientSession] = None
     ) -> UpdateMany:
         """
         Provide search criteria to the
@@ -404,7 +406,7 @@ class FindMany(
         return cast(UpdateMany, self.update(*args, session=session))
 
     def delete_many(
-        self, session: Optional[ClientSession] = None
+            self, session: Optional[ClientSession] = None
     ) -> DeleteMany:
         """
         Provide search criteria to the [DeleteMany](https://roman-right.github.io/beanie/api/queries/#deletemany) query
@@ -430,27 +432,27 @@ class FindMany(
 
     @overload
     def aggregate(
-        self,
-        aggregation_pipeline: List[Any],
-        projection_model: None = None,
-        session: Optional[ClientSession] = None,
+            self,
+            aggregation_pipeline: List[Any],
+            projection_model: None = None,
+            session: Optional[ClientSession] = None,
     ) -> AggregationQuery[Dict[str, Any]]:
         ...
 
     @overload
     def aggregate(
-        self,
-        aggregation_pipeline: List[Any],
-        projection_model: Type[FindQueryProjectionType],
-        session: Optional[ClientSession] = None,
+            self,
+            aggregation_pipeline: List[Any],
+            projection_model: Type[FindQueryProjectionType],
+            session: Optional[ClientSession] = None,
     ) -> AggregationQuery[FindQueryProjectionType]:
         ...
 
     def aggregate(
-        self,
-        aggregation_pipeline: List[Any],
-        projection_model: Optional[Type[FindQueryProjectionType]] = None,
-        session: Optional[ClientSession] = None,
+            self,
+            aggregation_pipeline: List[Any],
+            projection_model: Optional[Type[FindQueryProjectionType]] = None,
+            session: Optional[ClientSession] = None,
     ) -> Union[
         AggregationQuery[Dict[str, Any]],
         AggregationQuery[FindQueryProjectionType],
@@ -498,15 +500,15 @@ class FindOne(FindQuery[FindQueryResultType]):
 
     @overload
     def project(
-        self: "FindOne[FindQueryResultType]",
-        projection_model: None = None,
+            self: "FindOne[FindQueryResultType]",
+            projection_model: None = None,
     ) -> "FindOne[FindQueryResultType]":
         ...
 
     @overload
     def project(
-        self: "FindOne[FindQueryResultType]",
-        projection_model: Type[FindQueryProjectionType],
+            self: "FindOne[FindQueryResultType]",
+            projection_model: Type[FindQueryProjectionType],
     ) -> "FindOne[FindQueryProjectionType]":
         ...
 
@@ -514,8 +516,8 @@ class FindOne(FindQuery[FindQueryResultType]):
     #  code duplication
 
     def project(
-        self: "FindOne[FindQueryResultType]",
-        projection_model: Optional[Type[FindQueryProjectionType]] = None,
+            self: "FindOne[FindQueryResultType]",
+            projection_model: Optional[Type[FindQueryProjectionType]] = None,
     ) -> Union[
         "FindOne[FindQueryResultType]", "FindOne[FindQueryProjectionType]"
     ]:
@@ -529,27 +531,27 @@ class FindOne(FindQuery[FindQueryResultType]):
 
     @overload
     def find_one(
-        self: "FindOne[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: None = None,
-        session: Optional[ClientSession] = None,
+            self: "FindOne[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: None = None,
+            session: Optional[ClientSession] = None,
     ) -> "FindOne[FindQueryResultType]":
         ...
 
     @overload
     def find_one(
-        self: "FindOne[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: Type[FindQueryProjectionType],
-        session: Optional[ClientSession] = None,
+            self: "FindOne[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: Type[FindQueryProjectionType],
+            session: Optional[ClientSession] = None,
     ) -> "FindOne[FindQueryProjectionType]":
         ...
 
     def find_one(
-        self: "FindOne[FindQueryResultType]",
-        *args: Union[Mapping[str, Any], bool],
-        projection_model: Optional[Type[FindQueryProjectionType]] = None,
-        session: Optional[ClientSession] = None,
+            self: "FindOne[FindQueryResultType]",
+            *args: Union[Mapping[str, Any], bool],
+            projection_model: Optional[Type[FindQueryProjectionType]] = None,
+            session: Optional[ClientSession] = None,
     ) -> Union[
         "FindOne[FindQueryResultType]", "FindOne[FindQueryProjectionType]"
     ]:
@@ -567,7 +569,8 @@ class FindOne(FindQuery[FindQueryResultType]):
         return self
 
     def update_one(
-        self, *args: Mapping[str, Any], session: Optional[ClientSession] = None
+            self, *args: Mapping[str, Any],
+            session: Optional[ClientSession] = None
     ) -> UpdateOne:
         """
         Create [UpdateOne](https://roman-right.github.io/beanie/api/queries/#updateone) query using modifications and
@@ -590,9 +593,9 @@ class FindOne(FindQuery[FindQueryResultType]):
         return cast(DeleteOne, self.delete(session=session))
 
     async def replace_one(
-        self,
-        document: "DocType",
-        session: Optional[ClientSession] = None,
+            self,
+            document: "DocType",
+            session: Optional[ClientSession] = None,
     ) -> UpdateResult:
         """
         Replace found document by provided
@@ -614,7 +617,7 @@ class FindOne(FindQuery[FindQueryResultType]):
         return result
 
     def __await__(
-        self,
+            self,
     ) -> Generator[Coroutine, Any, Optional[FindQueryResultType]]:
         """
         Run the query

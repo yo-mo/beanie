@@ -13,9 +13,9 @@ from typing import List, Optional, Set, Tuple, Union
 from uuid import UUID, uuid4
 
 import pymongo
+from pydantic import BaseModel, Field
 from pydantic import SecretBytes, SecretStr
 from pydantic.color import Color
-from pydantic import BaseModel, Field
 from pymongo import IndexModel
 
 from beanie import Document, Indexed, Insert, Replace, ValidateOnSave
@@ -233,3 +233,12 @@ class DocumentWithPydanticConfig(Document):
 
     class Config(Document.Config):
         validate_assignment = True
+
+
+class Inner(Document):
+    num_1: int
+
+
+class DocumentWithNestedField(Document):
+    inner: Inner
+    num_2: int
