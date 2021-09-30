@@ -616,6 +616,24 @@ class FindOne(FindQuery[FindQueryResultType]):
             raise DocumentNotFound
         return result
 
+    async def replace_one_with_value(
+            self,
+            value: Dict[str, Any],
+            session: Optional[ClientSession] = None,
+    ) -> UpdateResult:
+        self.set_session(session=session)
+        result: UpdateResult = (
+            await self.document_model.get_motor_collection().replace_one(
+                self.get_filter_query(),
+                value,
+                session=self.session,
+            )
+        )
+
+        if not result.raw_result["updatedExisting"]:
+            raise DocumentNotFound
+        return result
+
     def __await__(
             self,
     ) -> Generator[Coroutine, Any, Optional[FindQueryResultType]]:

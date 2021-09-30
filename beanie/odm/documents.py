@@ -138,6 +138,7 @@ class Document(BaseModel, UpdateMethods):
         """
 
         data = get_dict(self)
+        print(data)
         for layer in sorted(data.keys(), reverse=True):
             for document_data in data[layer]:
                 await document_data["object"].insert_value(
@@ -488,6 +489,37 @@ class Document(BaseModel, UpdateMethods):
             Used when revision based protection is turned on.
         :return: self
         """
+        # if self.id is None:
+        #     raise ValueError("Document must have an id")
+        #
+        # use_revision_id = self.get_settings().model_settings.use_revision
+        #
+        # find_query: Dict[str, Any] = {"_id": self.id}
+        #
+        # if use_revision_id and not force:
+        #     find_query["revision_id"] = self._previous_revision_id
+        #
+        # try:
+        #     await self.find_one(find_query).replace_one(self, session=session)
+        # except DocumentNotFound:
+        #     if use_revision_id and not force:
+        #         raise RevisionIdWasChanged
+        #     else:
+        #         raise DocumentNotFound
+        # return self
+        data = get_dict(self)
+        for layer in sorted(data.keys(), reverse=True):
+            for document_data in data[layer]:
+                await document_data["object"].replace_with_value(
+                    document_data["value"], session=session)
+        return self
+
+    async def replace_with_value(
+            self: DocType,
+            value: Dict[str, Any],
+            session: Optional[ClientSession] = None,
+            force: bool = False,
+    ):
         if self.id is None:
             raise ValueError("Document must have an id")
 
@@ -499,7 +531,9 @@ class Document(BaseModel, UpdateMethods):
             find_query["revision_id"] = self._previous_revision_id
 
         try:
-            await self.find_one(find_query).replace_one(self, session=session)
+            del value["_id"]
+            await self.find_one(find_query).replace_one_with_value(value,
+                                                                   session=session)
         except DocumentNotFound:
             if use_revision_id and not force:
                 raise RevisionIdWasChanged
@@ -859,4 +893,3 @@ class Document(BaseModel, UpdateMethods):
         copy_on_model_validation = False
         allow_population_by_field_name = True
         fields = {"id": "_id"}
-

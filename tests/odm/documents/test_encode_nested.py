@@ -12,4 +12,9 @@ async def test_simple_case():
 
     inner.num_1 = 100
     await doc.insert()
-    assert doc == 1
+    # assert doc == 1
+
+    inner.num_1 = 200
+
+    await doc.replace()
+

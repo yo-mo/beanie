@@ -61,7 +61,7 @@ class Encoder:
 
         self.main_object_encoded = self._encode(self.object,
                                                 _is_top_level=True)
-        if getattr(self.object, "get_link"):
+        if getattr(self.object, "get_link", None):
             self.encoded_objects[0] = [{
                     "object": self.object,
                     "value": self.main_object_encoded
